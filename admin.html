@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>JPS Teamstore | Painel Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#0B0D0C;color:#F2F4F3;line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;overflow-x:hidden}
+a{color:inherit}
+img{display:block;max-width:100%;height:auto}
+input,select,button{font-family:inherit;font-size:.9375rem}
+
+:root{
+  --bg:#0B0D0C; --bg2:#141715; --card:#181B19;
+  --border:rgba(255,255,255,.1);
+  --text:#F2F4F3; --t2:#9CA39F; --t3:#5E645F;
+  --accent:#39D97A; --accent-dk:#1FA85A;
+  --red:#EF4444; --red-bg:rgba(239,68,68,.12);
+  --amber:#F5A623; --amber-bg:rgba(245,166,35,.12);
+  --accent-bg:rgba(57,217,122,.1);
+}
+
+/* ── LOGIN ── */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem}
+.login-box{width:100%;max-width:360px;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:2.5rem 2rem}
+.login-box h1{font-size:1.375rem;font-weight:900;margin-bottom:.375rem;letter-spacing:-.01em}
+.login-box .sub{color:var(--t2);font-size:.875rem;margin-bottom:1.75rem}
+.field{margin-bottom:1rem}
+.field label{display:block;font-size:.75rem;font-weight:700;color:var(--t2);margin-bottom:.375rem}
+.field input{width:100%;background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:.75rem .875rem;border-radius:10px;outline:none;transition:border-color .2s}
+.field input:focus{border-color:var(--accent)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;background:var(--accent);color:#06110A;font-weight:800;padding:.75rem 1.25rem;border-radius:10px;border:none;cursor:pointer;transition:opacity .2s;width:100%}
+.btn:hover{opacity:.9}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-outline{background:transparent;border:1.5px solid var(--border);color:var(--text)}
+.btn-danger{background:var(--red-bg);color:var(--red)}
+.msg{font-size:.8125rem;padding:.75rem;border-radius:8px;margin-bottom:1rem}
+.msg-error{background:var(--red-bg);color:var(--red)}
+.msg-ok{background:var(--accent-bg);color:var(--accent)}
+.hidden{display:none !important}
+
+/* ── PAINEL ── */
+.topbar{position:sticky;top:0;z-index:50;background:rgba(11,13,12,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:.875rem 1.5rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.topbar .logo{font-weight:900;font-size:1.0625rem;letter-spacing:-.01em}
+.topbar .logo span{color:var(--accent)}
+.topbar .user-email{font-size:.8125rem;color:var(--t2)}
+.wrap{max-width:900px;margin:0 auto;padding:2rem 1.5rem 4rem}
+
+.panel{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:1.75rem;margin-bottom:1.75rem}
+.panel h2{font-size:1.125rem;font-weight:800;margin-bottom:1.25rem}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:1rem}
+@media(max-width:560px){.grid2{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:480px){
+  .panel{padding:1.25rem}
+  .wrap{padding:1.5rem 1rem 3rem}
+  .prod-row{gap:.625rem}
+  .prod-thumb{width:42px;height:42px}
+  .prod-nome{font-size:.8125rem;line-height:1.3}
+  .prod-meta{font-size:.6875rem}
+  .icon-btn{width:30px;height:30px}
+  .prod-actions{gap:.375rem}
+}
+.field select{width:100%;background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:.75rem .875rem;border-radius:10px;outline:none}
+.field-file{background:var(--bg2);border:1.5px dashed var(--border);border-radius:10px;padding:1rem;text-align:center;cursor:pointer}
+.field-file input{display:none}
+.preview{margin-top:.75rem;width:100%;max-width:160px;border-radius:10px;overflow:hidden;border:1px solid var(--border)}
+.form-actions{display:flex;gap:.75rem;margin-top:.5rem}
+.form-actions .btn{width:auto;flex:1}
+
+/* ── LISTA ── */
+.prod-row{display:flex;align-items:center;gap:1rem;padding:.875rem 0;border-bottom:1px solid var(--border)}
+.prod-row:last-child{border-bottom:none}
+.prod-thumb{width:52px;height:52px;border-radius:8px;background:var(--bg2);flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:.65rem;color:var(--t3);text-align:center}
+.prod-thumb img{width:100%;height:100%;object-fit:cover}
+.prod-info{flex:1;min-width:0}
+.prod-nome{font-weight:700;font-size:.9375rem;overflow-wrap:break-word}
+.prod-meta{font-size:.75rem;color:var(--t3);margin-top:.25rem;display:flex;align-items:center;gap:.375rem;flex-wrap:wrap}
+.prod-status{display:inline-block;font-size:.625rem;font-weight:800;text-transform:uppercase;letter-spacing:.03em;padding:.15rem .5rem;border-radius:999px;white-space:nowrap}
+.status-disponivel{background:var(--accent-bg);color:var(--accent)}
+.status-encomenda{background:var(--amber-bg);color:var(--amber)}
+.prod-actions{display:flex;flex-direction:column;align-items:flex-end;gap:.5rem;flex-shrink:0}
+.prod-action-icons{display:flex;gap:.5rem}
+.icon-btn{width:34px;height:34px;border-radius:8px;background:var(--bg2);border:1px solid var(--border);color:var(--t2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.icon-btn:hover{color:var(--text);border-color:rgba(255,255,255,.25)}
+.icon-btn.danger:hover{color:var(--red);border-color:var(--red)}
+.icon-btn svg{width:15px;height:15px}
+.empty-note{color:var(--t3);font-size:.875rem;text-align:center;padding:2rem 0}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-wrap" id="loginView">
+  <div class="login-box">
+    <h1>Painel JPS Teamstore</h1>
+    <p class="sub">Acesso restrito — entre com seu e-mail e senha.</p>
+    <div class="msg msg-error hidden" id="loginMsg"></div>
+    <form id="loginForm">
+      <div class="field">
+        <label>E-mail</label>
+        <input type="email" id="loginEmail" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label>Senha</label>
+        <input type="password" id="loginPassword" autocomplete="current-password" required>
+      </div>
+      <button class="btn" type="submit" id="loginBtn">Entrar</button>
+    </form>
+  </div>
+</div>
+
+<!-- PAINEL -->
+<div id="panelView" class="hidden">
+  <div class="topbar">
+    <div class="logo">JPS <span>Admin</span></div>
+    <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+      <span class="user-email" id="userEmail"></span>
+      <button class="btn btn-outline" style="width:auto;padding:.5rem 1rem;font-size:.8125rem" id="logoutBtn">Sair</button>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <!-- FORMULÁRIO -->
+    <div class="panel">
+      <h2 id="formTitle">Adicionar produto</h2>
+      <div class="msg hidden" id="formMsg"></div>
+      <form id="prodForm">
+        <input type="hidden" id="prodId">
+        <div class="grid2">
+          <div class="field">
+            <label>Coleção</label>
+            <input type="text" id="prodColecao" list="colecaoList" placeholder="Ex: Chuteiras" required>
+            <datalist id="colecaoList"></datalist>
+          </div>
+          <div class="field">
+            <label>Status</label>
+            <select id="prodStatus">
+              <option value="disponivel">Disponível</option>
+              <option value="encomenda">Sob encomenda</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>Nome do produto</label>
+          <input type="text" id="prodNome" placeholder="Ex: Chuteira Society Modelo A" required>
+        </div>
+        <div class="field">
+          <label>Foto (opcional)</label>
+          <label class="field-file">
+            <input type="file" id="prodImagem" accept="image/*">
+            <span id="fileLabel">Clique pra escolher uma foto</span>
+          </label>
+          <div id="previewWrap"></div>
+        </div>
+        <div class="form-actions">
+          <button class="btn" type="submit" id="saveBtn">Salvar produto</button>
+          <button class="btn btn-outline hidden" type="button" id="cancelEditBtn">Cancelar edição</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- LISTA -->
+    <div class="panel">
+      <h2>Produtos cadastrados</h2>
+      <div id="prodList"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://mcnvecbjzegqvjughrse.supabase.co";
+const SUPABASE_KEY = "sb_publishable_maNc3kQ3TV17q83qUgXO4A_bJZdgxIV";
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const loginView = document.getElementById("loginView");
+const panelView = document.getElementById("panelView");
+const loginForm = document.getElementById("loginForm");
+const loginMsg = document.getElementById("loginMsg");
+const loginBtn = document.getElementById("loginBtn");
+const userEmail = document.getElementById("userEmail");
+const logoutBtn = document.getElementById("logoutBtn");
+
+const prodForm = document.getElementById("prodForm");
+const prodIdField = document.getElementById("prodId");
+const prodColecao = document.getElementById("prodColecao");
+const prodNome = document.getElementById("prodNome");
+const prodStatus = document.getElementById("prodStatus");
+const prodImagem = document.getElementById("prodImagem");
+const fileLabel = document.getElementById("fileLabel");
+const previewWrap = document.getElementById("previewWrap");
+const formTitle = document.getElementById("formTitle");
+const formMsg = document.getElementById("formMsg");
+const saveBtn = document.getElementById("saveBtn");
+const cancelEditBtn = document.getElementById("cancelEditBtn");
+const prodList = document.getElementById("prodList");
+const colecaoList = document.getElementById("colecaoList");
+
+let editandoImagemAtual = null;
+
+/* ── AUTENTICAÇÃO ── */
+loginForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  loginBtn.disabled = true;
+  loginMsg.classList.add("hidden");
+  const email = document.getElementById("loginEmail").value.trim();
+  const password = document.getElementById("loginPassword").value;
+  const { error } = await db.auth.signInWithPassword({ email, password });
+  loginBtn.disabled = false;
+  if (error){
+    loginMsg.textContent = "E-mail ou senha incorretos.";
+    loginMsg.classList.remove("hidden");
+  }
+});
+
+logoutBtn.addEventListener("click", async () => {
+  await db.auth.signOut();
+});
+
+db.auth.onAuthStateChange((event, session) => {
+  if (session){
+    loginView.classList.add("hidden");
+    panelView.classList.remove("hidden");
+    userEmail.textContent = session.user.email;
+    carregarLista();
+  } else {
+    panelView.classList.add("hidden");
+    loginView.classList.remove("hidden");
+  }
+});
+
+/* ── UPLOAD DE IMAGEM ── */
+prodImagem.addEventListener("change", () => {
+  const file = prodImagem.files[0];
+  if (!file){ fileLabel.textContent = "Clique pra escolher uma foto"; previewWrap.innerHTML = ""; return; }
+  fileLabel.textContent = file.name;
+  previewWrap.innerHTML = `<img class="preview" src="${URL.createObjectURL(file)}">`;
+});
+
+async function uploadImagemSeHouver(){
+  const file = prodImagem.files[0];
+  if (!file) return editandoImagemAtual; // mantém a foto atual se estiver editando e não trocou
+  const path = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_")}`;
+  const { error } = await db.storage.from("Produtos").upload(path, file);
+  if (error) throw error;
+  const { data } = db.storage.from("Produtos").getPublicUrl(path);
+  return data.publicUrl;
+}
+
+/* ── FORMULÁRIO (criar/editar) ── */
+prodForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  saveBtn.disabled = true;
+  formMsg.classList.add("hidden");
+  try {
+    const imagem_url = await uploadImagemSeHouver();
+    const payload = {
+      colecao: prodColecao.value.trim(),
+      produto: prodNome.value.trim(),
+      status: prodStatus.value,
+      imagem_url: imagem_url || null
+    };
+    const id = prodIdField.value;
+    const { error } = id
+      ? await db.from("produtos").update(payload).eq("id", id)
+      : await db.from("produtos").insert(payload);
+    if (error) throw error;
+    mostrarMsgForm("Produto salvo com sucesso!", true);
+    resetForm();
+    carregarLista();
+  } catch (err){
+    mostrarMsgForm("Erro ao salvar: " + err.message, false);
+  }
+  saveBtn.disabled = false;
+});
+
+cancelEditBtn.addEventListener("click", resetForm);
+
+function resetForm(){
+  prodForm.reset();
+  prodIdField.value = "";
+  editandoImagemAtual = null;
+  fileLabel.textContent = "Clique pra escolher uma foto";
+  previewWrap.innerHTML = "";
+  formTitle.textContent = "Adicionar produto";
+  saveBtn.textContent = "Salvar produto";
+  cancelEditBtn.classList.add("hidden");
+}
+
+function mostrarMsgForm(texto, ok){
+  formMsg.textContent = texto;
+  formMsg.className = "msg " + (ok ? "msg-ok" : "msg-error");
+  setTimeout(() => formMsg.classList.add("hidden"), 4000);
+}
+
+/* ── LISTA / EDITAR / EXCLUIR ── */
+async function carregarLista(){
+  const { data, error } = await db.from("produtos").select("*").order("criado_em", { ascending: false });
+  if (error){
+    prodList.innerHTML = `<p class="empty-note">Erro ao carregar: ${error.message}</p>`;
+    return;
+  }
+  if (!data.length){
+    prodList.innerHTML = `<p class="empty-note">Nenhum produto cadastrado ainda.</p>`;
+    colecaoList.innerHTML = "";
+    return;
+  }
+  colecaoList.innerHTML = [...new Set(data.map(p => p.colecao))]
+    .map(c => `<option value="${c.replace(/"/g,'&quot;')}">`).join("");
+
+  const STATUS_LABEL = { disponivel: "Disponível", encomenda: "Sob encomenda" };
+  prodList.innerHTML = data.map(p => `
+    <div class="prod-row">
+      <div class="prod-thumb">${p.imagem_url ? `<img src="${p.imagem_url}" alt="">` : "sem foto"}</div>
+      <div class="prod-info">
+        <div class="prod-nome">${p.produto}</div>
+        <div class="prod-meta">${p.colecao}</div>
+      </div>
+      <div class="prod-actions">
+        <div class="prod-action-icons">
+          <button class="icon-btn" title="Editar" onclick="editarProduto('${p.id}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 114 4L7.5 20.5 2 22l1.5-5.5z"/></svg>
+          </button>
+          <button class="icon-btn danger" title="Excluir" onclick="excluirProduto('${p.id}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+          </button>
+        </div>
+        <span class="prod-status status-${p.status}">${STATUS_LABEL[p.status] || p.status}</span>
+      </div>
+    </div>
+  `).join("");
+
+  window.__produtos = data;
+}
+
+window.editarProduto = function(id){
+  const p = window.__produtos.find(x => x.id === id);
+  if (!p) return;
+  prodIdField.value = p.id;
+  prodColecao.value = p.colecao;
+  prodNome.value = p.produto;
+  prodStatus.value = p.status;
+  editandoImagemAtual = p.imagem_url;
+  previewWrap.innerHTML = p.imagem_url ? `<img class="preview" src="${p.imagem_url}">` : "";
+  fileLabel.textContent = p.imagem_url ? "Foto atual (escolha outra pra trocar)" : "Clique pra escolher uma foto";
+  formTitle.textContent = "Editar produto";
+  saveBtn.textContent = "Salvar alterações";
+  cancelEditBtn.classList.remove("hidden");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
+
+window.excluirProduto = async function(id){
+  if (!confirm("Tem certeza que quer excluir esse produto?")) return;
+  const { error } = await db.from("produtos").delete().eq("id", id);
+  if (error){ alert("Erro ao excluir: " + error.message); return; }
+  carregarLista();
+};
+</script>
+</body>
+</html>
